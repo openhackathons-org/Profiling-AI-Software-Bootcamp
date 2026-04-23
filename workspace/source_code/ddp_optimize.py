@@ -1,3 +1,18 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from torch.cuda import nvtx
 import torch
 from torch.utils.data.distributed import DistributedSampler
@@ -136,10 +151,32 @@ def main():
 
     # Restricts data loading to a subset of the dataset exclusive to the current process
     train_sampler = DistributedSampler(dataset=train_set)
+    #prefetch_factor=4 — each worker pre-fetches 4 batches ahead, hiding I/O latency
+    num_workers = min(os.cpu_count(), 8)
+    train_loader = DataLoader(
+        dataset=train_set,
+        batch_size=batch_size,
+        sampler=train_sampler,
+        num_workers=num_workers,
+        pin_memory=True,
+        prefetch_factor=4,
+        persistent_workers=True,
+        drop_last=True,
+    )
+     # Test loader does not have to follow distributed sampling strategy
+    test_loader = DataLoader(
+        dataset=test_set,
+        batch_size=128,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=True,
+        prefetch_factor=4,
+        persistent_workers=True,
+    )
 
-    train_loader = DataLoader(dataset=train_set, batch_size=batch_size, sampler=train_sampler, num_workers=2, pin_memory=True)
+   # train_loader = DataLoader(dataset=train_set, batch_size=batch_size, sampler=train_sampler, num_workers=2, pin_memory=True)
     # Test loader does not have to follow distributed sampling strategy
-    test_loader = DataLoader(dataset=test_set, batch_size=128, shuffle=False, num_workers=2, pin_memory=True)
+   # test_loader = DataLoader(dataset=test_set, batch_size=128, shuffle=False, num_workers=2, pin_memory=True)
 
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(ddp_model.parameters(), lr=learning_rate, momentum=0.9, weight_decay=1e-5)
@@ -167,14 +204,15 @@ def main():
             nvtx.range_push("Data loading");
             for data in train_loader:
                 nvtx.range_pop();# Data loading
+                nvtx.range_push("Copy to device")
+                inputs, labels = data[0].to(device, non_blocking=True), data[1].to(device, non_blocking=True)
+
+                # set_to_none=True — frees gradient tensors instead of filling with zeros, saves memory
+                optimizer.zero_grad(set_to_none=True)
+                nvtx.range_pop() # Copy to device
                 
-                with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):
-                    nvtx.range_push("Copy to device")
-                    inputs, labels = data[0].to(device), data[1].to(device)
-                    nvtx.range_pop() # Copy to device
-                    
-                    nvtx.range_push("Forward pass")
-                    optimizer.zero_grad()
+                with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):                     
+                    nvtx.range_push("Forward pass")    
                     outputs = ddp_model(inputs)
                     loss = criterion(outputs, labels)
                     nvtx.range_pop() # Forward pass

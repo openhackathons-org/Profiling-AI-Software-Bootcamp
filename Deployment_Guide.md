@@ -12,41 +12,65 @@ To run this tutorial, you will need a DGX machine with a minimum of NVIDIA Hoppe
 - Install latest [Miniconda](https://www.anaconda.com/docs/getting-started/miniconda/install/linux-install). 
 - Install the latest [Docker](https://docs.docker.com/engine/install/) or [Singularity](https://sylabs.io/docs/).
 - Install NVIDIA [Nsight Systems](https://developer.nvidia.com/nsight-systems).
-
+- Install [UV](https://docs.astral.sh/uv/getting-started/installation/)
 
 ### Tested environment
 
 We tested and ran all labs on a DGX machine equipped with a H100 GPUs (80GB).
 
 
-### Deploying with conda (Lab 1, 2, & 3)
+### Deploying Lab 1, 2, & 3
 
-#### Creating and running on conda env
+#### Please follow the commands below:
 
 ```bash
 
-#create conda env
+#create uv venv 
 
-conda create -n env_profiler python=3.12
+uv venv --python 3.12
 
-#activate the env
+#activate the venv
 
-conda activate env_profiler
+source .venv/bin/activate
 
 # Install the dependencies.
 
 cd ~/Profiling-AI-Software-Bootcamp
 
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 
-#running the Jupyter Notebook
+```
+#### Downloading Dataset
+
+```bash
+
+# navigate to workspace directory
+
+cd ~/Profiling-AI-Software-Bootcamp/workspace
+
+# run the download script
+
+uv run python source_code/download-data.py
+
+# unzip the data
+
+unzip -u data/data-list.zip -d data/
+
+unzip -u source_code/saved_models.zip -d source_code/
+
+```
+
+#### Running the Jupyter Notebook
+
+```bash
+# Please ensure that venv is activated otherwise activate it by running: source .venv/bin/activate
 
 jupyter-lab --no-browser --allow-root --ip=0.0.0.0 --port=8888 --NotebookApp.token="" --notebook-dir=./workspace
 
 ```
 
  
-### Deploying with container (Lab 4)
+### Deploying Lab 4 with container 
 
 You can deploy this material using Conda, Docker or Apptainer containers. Please refer to the respective sections for the instructions.
 
@@ -68,9 +92,7 @@ sudo docker build -f Dockerfile --network=host -t tecont:v1 .
 
 ```bash
 
-docker run --rm -it --gpus all -p 8888:8888 --ipc=host --ulimit memlock=-1 --ulimit stack=67108864
- -v ./workspace:/workspace tecont:v1 
- jupyter-lab --no-browser --allow-root --ip=0.0.0.0 --port=8888 --NotebookApp.token="" --notebook-dir=/workspace
+docker run --rm -it --gpus all -p 8888:8888 --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 -v ./workspace:/workspace tecont:v1 jupyter-lab --no-browser --allow-root --ip=0.0.0.0 --port=8888 --NotebookApp.token="" --notebook-dir=/workspace
 
 ```
 
@@ -105,8 +127,7 @@ apptainer build --fakeroot --sandbox tecont.simg Singularity
 
 ```bash
 
-singularity run --nv -B workspace:/workspace tecont.simg 
-jupyter-lab --no-browser --allow-root --ip=0.0.0.0 --port=8888 --NotebookApp.token="" --notebook-dir=/workspace
+singularity run --nv -B workspace:/workspace tecont.simg jupyter-lab --no-browser --allow-root --ip=0.0.0.0 --port=8888 --NotebookApp.token="" --notebook-dir=/workspace
 
 ```
  
@@ -121,3 +142,30 @@ When you finish these notebooks, shut down jupyter lab by selecting `File > Shut
 
 ## Known issues
 
+- invalid device ordinal
+
+
+```python
+
+W0418 12:45:25.804000 704756 torch/distributed/run.py:852] 
+W0418 12:45:25.804000 704756 torch/distributed/run.py:852] *****************************************
+W0418 12:45:25.804000 704756 torch/distributed/run.py:852] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0418 12:45:25.804000 704756 torch/distributed/run.py:852] *****************************************
+Local rank  2
+Local rank  0
+Local rank  3
+Local rank  1
+
+[2026-04-18 12:45:41] gpu002:704798:704908 [0] transport/p2p.cc:275 NCCL WARN Cuda failure 101 'invalid device ordinal'
+
+[2026-04-18 12:45:41] gpu002:704798:704904 [0] proxy.cc:1632 NCCL WARN [Service thread] Accept failed Resource temporarily unavailable
+
+[2026-04-18 12:45:41] gpu002:704800:704915 [1] misc/socket.cc:72 NCCL WARN socketProgress: Connection closed by remote peer gpu002.cm.cluster<44189>
+
+[2026-04-18 12:45:41] gpu002:704800:704915 [1] proxy.cc:1208 NCCL WARN ncclProxyClientGetFd call to tpRank 4 handle 0x15518002cbb0 failed : 6
+[rank4]: Traceback (most recent call last):
+
+```
+
+The above issues may be raised when running the multinode Notebook. This is because 4 GPUs are required for each node, resulting in a total of 8 GPUs. If the Slurm manager allocates all 8 GPUs from a single node, an invalid device ordinal issue is raised.
+This can be avoided by ensuring that 4 of the GPUs are allocated from a different node. Alternatively, you can target specific nodes in the Slurm script using the nodelist flag (e.g., #SBATCH --nodelist=gpu004,gpu005).

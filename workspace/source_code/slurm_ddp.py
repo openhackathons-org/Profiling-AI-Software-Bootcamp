@@ -1,6 +1,23 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+
 import torch
 from torch.cuda import nvtx
-import nvtx as nv
+#import nvtx as nv
 from torch.utils.data.distributed import DistributedSampler
 from torch.utils.data import DataLoader
 import torch.nn as nn
@@ -15,6 +32,19 @@ import random
 import numpy as np
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
+
+torch.set_warn_always(False)
+import signal
+import time
+
+class GracefulKiller:
+  kill_now = False
+  def __init__(self):
+    signal.signal(signal.SIGINT, self.exit_gracefully)
+    signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+  def exit_gracefully(self, signum, frame):
+    self.kill_now = True
 
 def set_random_seeds(random_seed=0):
 
@@ -60,7 +90,7 @@ def get_resources():
 
 def main():
 
-    num_epochs_default = 2  #50 #10000
+    num_epochs_default = 3  #50 #10000
     batch_size_default = 256 # 1024
     learning_rate_default = 0.1
     random_seed_default = 0
@@ -151,43 +181,59 @@ def main():
     fp16_scaler = torch.amp.GradScaler("cuda")
 
     #torch.cuda.cudart().cudaProfilerStart()
-    # Loop over the dataset multiple times
-    for epoch in range(num_epochs):
-
-        print("Local Rank: {}, Epoch: {}, Training ...".format(local_rank, epoch))
-
-        #Save and evaluate model routinely
-        if epoch % 2 == 0:
-            if local_rank == 0:
-                accuracy = evaluate(model=ddp_model, device=device, test_loader=test_loader)
-                torch.save(ddp_model.state_dict(), model_filepath)
-                print("-" * 75)
-                print("Epoch: {}, Accuracy: {}".format(epoch, accuracy))
-                print("-" * 75)
-                
-        nvtx.range_push("Train")
-        ddp_model.train()
-        nvtx.range_pop() # Train
-        
-        for data in train_loader:
-            with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):
-                with nv.annotate("Copy to device", color="blue"):
-                    inputs, labels = data[0].to(device), data[1].to(device)
+    try:
+        # Loop over the dataset multiple times
+        for epoch in range(num_epochs):
     
-                with nv.annotate("Forward pass", color="green"):
+            print("Local Rank: {}, Epoch: {}, Training ...".format(local_rank, epoch))
+    
+            #Save and evaluate model routinely
+            if epoch % 2 == 0:
+                torch.cuda.cudart().cudaProfilerStart()
+                if local_rank == 0:
+                    accuracy = evaluate(model=ddp_model, device=device, test_loader=test_loader)
+                    torch.save(ddp_model.state_dict(), model_filepath)
+                    print("-" * 75)
+                    print("Epoch: {}, Accuracy: {}".format(epoch, accuracy))
+                    print("-" * 75)
+                    
+            nvtx.range_push("Train")
+            ddp_model.train()
+            nvtx.range_pop() # Train
+    
+            nvtx.range_push("Data loading");
+            for data in train_loader:
+                nvtx.range_pop();# Data loading
+                
+                with torch.amp.autocast(device_type='cuda', dtype=torch.float16, enabled=True):
+                    nvtx.range_push("Copy to device")
+                    inputs, labels = data[0].to(device), data[1].to(device)
+                    nvtx.range_pop() # Train
+        
+                    nvtx.range_push("Forward pass")
                     optimizer.zero_grad()
                     outputs = ddp_model(inputs)
                     loss = criterion(outputs, labels)
-
-            with nv.annotate("Backward pass", color="red"):
+                    nvtx.range_pop() # Train
+    
+                nvtx.range_push("Backward pass")
                 fp16_scaler.scale(loss).backward()    
                 fp16_scaler.step(optimizer)
                 fp16_scaler.update()
-
+                nvtx.range_pop()
+    
+                nvtx.range_push("Data loading"); # pushing the next data in data loader 
+            if epoch == 2:
+                torch.cuda.cudart().cudaProfilerStop() 
+    except:
+        print("exception caught at inner ")           
     #if num_epochs ==50:
     #torch.distributed.destroy_process_group() 
     
-    torch.cuda.cudart().cudaProfilerStop() 
+    #torch.cuda.cudart().cudaProfilerStop() 
 
 if __name__ == "__main__":
-    main()
+    killer = GracefulKiller()
+    while not killer.kill_now:
+        time.sleep(1)
+        main()

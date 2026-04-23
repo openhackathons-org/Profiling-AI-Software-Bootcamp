@@ -19,8 +19,8 @@ import os
 dataset = 'https://drive.google.com/uc?id=1bsnmqhE6bzJHQKbhnWBtBSvso03784_l&confirm=t'
 model = 'https://drive.google.com/uc?id=1cKRe2Wn9CJN_5rsUDRIo1b8ah5yooTzB&confirm=t'
 
-output_dataset = '../data/data-list.zip'
-output_model = '../source_code/saved_models.zip'
+output_dataset = 'data/data-list.zip'
+output_model = 'source_code/saved_models.zip'
 
 gdown.download(dataset, output_dataset, quiet=False, proxy=None)
 gdown.download(model, output_model, quiet=False, proxy=None)

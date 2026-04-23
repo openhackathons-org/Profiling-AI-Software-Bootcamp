@@ -6,7 +6,7 @@
 #SBATCH --threads-per-core=1    # number of threads per core
 #SBATCH --gres=gpu:4            # number of gpus per node
 #SBATCH --time=12:00:00         # format: HH:MM:SS
-##SBATCH --nodelist=gpu004,gpu005
+##SBATCH --nodelist=gpu002,gpu004
 ##SBATCH --mem 0
 #SBATCH --job-name=ddpslurm
 #SBATCH -o workspace/%x.output%j
@@ -36,8 +36,9 @@ echo "WORLD_SIZE="${SLURM_NPROCS}
 
 module load nsight-systems/2024.5.1
 
-export TMPDIR=$PWD/workspace/reports/tmp
-echo $TMPDIR
+#export TMPDIR=$PWD/workspace/reports/tmp
+#export TMPDIR=workspace/reports/tmp
+#echo $TMPDIR
 echo $PWD
 
 # get master node IP Address 
@@ -51,24 +52,24 @@ export MASTER_ADDR=$(srun --nodes=1 --ntasks=1 -w "$head_node" hostname --ip-add
 export MASTER_PORT=12340
 echo "Master IP address: " $MASTER_ADDR
 
-export NCCL_DEBUG=INFO #WARN
+export NCCL_DEBUG=WARN
 export NCCL_IB_DISABLE=1
 export NCCL_SOCKET_IFNAME=eth0
 export CUDA_VISIBLE_DEVICES=${SLURM_LOCALID}
 
 # Force Ring algorithm if needed
 #export NCCL_ALGO=Ring
-export NCCL_DEBUG=INFO
+#export NCCL_DEBUG=INFO
 #export NCCL_DEBUG_SUBSYS=INIT,GRAPH,TOPO,TUNING,COLL,TRACE
 #NCCL_TOPO_DUMP_FILE=reports/topo_ring.xml
 
 #export CUDA_VISIBLE_DEVICES=0,1,2,3
 cd workspace
-
+# --output reports/multinode_nvtx_resnet50_opt%q{SLURM_NODEID}_%q{SLURM_PROCID} \
 srun nsys profile --trace cuda,osrt,nvtx,ucx \
 --gpu-metrics-devices=cuda-visible \
---gpu-metrics-frequency=5000 \
 --cuda-flush-interval=0 \
 --nic-metrics=true \
 --output reports/multinode_nvtx_resnet50_opt%q{SLURM_NODEID}_%q{SLURM_PROCID} \
---force-overwrite true /home/$USER/.venv/bin/python source_code/slurm_ddp.py #/home/$USER/.conda/envs/env_mnode/bin/python source_code/slurm_ddp.py
+--force-overwrite true /home/$USER/.venv/bin/python source_code/slurm_ddp.py
+#/home/$USER/.conda/envs/env_profiler/bin/python source_code/slurm_ddp.py
