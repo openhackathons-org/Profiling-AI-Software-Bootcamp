@@ -2,21 +2,20 @@
 
 # Profiling AI Software Bootcamp
 
-This lab discusses profiling using NVIDIA® Nsight™ Systems, focusing on steps to optimize a deep neural network (DNN) training program that detects handwritten digits using a PyTorch Modified National Institute of Standards and Technology (MNIST) dataset. The techniques and strategies discussed in this lab will translate to optimizing any application that uses NVIDIA's graphic processing units (GPUs).
+The Profiling AI Software Bootcamp covers the process and tools for profiling AI and machine learning applications to fully utilize high-performance systems. Attendees will learn to profile applications using NVIDIA Nsight™ Systems, a system-wide performance analysis tool; analyze and identify optimization opportunities; and improve application performance to scale efficiently across systems of any size and number of CPUs and GPUs. Additionally, this bootcamp will walk through the system topology to learn the dynamics of FP8 precision, multi-GPU, and multi-node connections and architecture.
 
 ## Bootcamp Content
 
 This content contains 4 Labs:
-- Lab 1: Start the NVIDIA Nsight Systems lab
-- Lab 2: PyTorch MNIST and Optimization Workflow
-- Lab 3: Data Transfers between Host and GPU
-- Lab 4: Tensor Core
-- Lab 5: Summary
+- Lab 1: System Topology
+- Lab 2: Distributed Training Strategy
+- Lab 3: Performance Overview
+- Lab 4: Transformer Engine
 
 
 ## Bootcamp Duration
 
-The duration of the tutorial is 2 hours.
+The duration of the tutorial is 4 hours 30 minutes.
 
 
 ## Tools and Frameworks
