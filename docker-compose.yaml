@@ -6,7 +6,7 @@ services:
       - "8889:8889"
     volumes:
       - type: bind
-        source: ./Profiling-AI-Software-Bootcamp/workspace
+        source: ../Profiling-AI-Software-Bootcamp/workspace
         target: /workspace
     environment:
       - NVIDIA_DRIVER_CAPABILITIES=all
