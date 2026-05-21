@@ -39,7 +39,7 @@ test_set = datasets.MNIST('./mnist_data', download=True, train=False,
               transforms.Normalize((0.1307,),(0.3081,))]))
 
 def net_setup():
-	os.environ['MASTER_ADDR'] = '10.184.92.71'
+	os.environ['MASTER_ADDR'] = 'localhost'
 	os.environ['MASTER_PORT'] = '12315'
 
 def checkpointing(rank, epoch, net, optimizer, loss):

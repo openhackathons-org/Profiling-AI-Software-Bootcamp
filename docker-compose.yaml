@@ -1,0 +1,28 @@
+services:
+  jupyter:
+    image: nvcr.io/nvidia/pytorch:26.02-py3
+    ports:
+      - "8888:8888"
+      - "8889:8889"
+    volumes:
+      - type: bind
+        source: ./Profiling-AI-Software-Bootcamp/workspace
+        target: /workspace
+    environment:
+      - NVIDIA_DRIVER_CAPABILITIES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    shm_size: '2gb'
+    ipc: host
+    command: >
+      sh -c "pip install jupyterlab jupyterlab-nvdashboard torch_tb_profiler nvtx &&
+             tensorboard --logdir=/workspace/logs --port 8889 &
+             exec jupyter-lab --no-browser --allow-root --ip=0.0.0.0 --port=8888 --NotebookApp.token='' --notebook-dir=/workspace/"
