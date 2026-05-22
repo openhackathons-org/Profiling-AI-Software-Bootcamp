@@ -8,9 +8,9 @@ This is a workshop repository for the "Profiling AI Software Bootcamp" covering 
 
 **Hardware Scaling**:
 - Original: Multi-node DGX systems with H100 GPUs (80GB) - tested configuration
-- Target: Single-node cloud instances with NVIDIA L40S GPUs (48GB)
-- Migration involves both topology changes (multi-node → single-node) and hardware scaling (H100 → L40S)
-- L40S chosen for FP8 support (required for Lab 4 - Transformer Engine)
+- Target: Single-node cloud instances with 4× NVIDIA L4 GPUs (23GB each)
+- Migration involves both topology changes (multi-node → single-node) and hardware scaling (H100 → L4)
+- L4 supports FP8 (Ada Lovelace architecture), so Lab 4 (Transformer Engine) works as designed
 
 ## Environment Setup
 
@@ -86,14 +86,14 @@ Entry point: `workspace/start_here.ipynb`
 
 **Original Setup**: Workshop assumed 2+ nodes with 4 GPUs each (8 total GPUs minimum) managed by Slurm, using H100 GPUs (80GB).
 
-**Target Setup**: Single cloud instance with L4 or L40S GPUs (local execution only).
+**Target Setup**: Single cloud instance with 4× NVIDIA L4 GPUs (local execution only).
 
 ### Hardware Scaling Considerations
 
-When scaling from H100 to L40S:
-- **Memory constraints**: L40S (48GB) has less memory than H100 (80GB); may need to reduce batch sizes
-- **Model sizes**: Current scripts use ResNet50d with 336x336 images; should work on L40S
-- **FP8 features**: Lab 4 (Transformer Engine) requires FP8 support; L40S supports FP8 (Ada Lovelace architecture)
+When scaling from H100 to L4:
+- **Memory constraints**: L4 (23GB) has substantially less memory than H100 (80GB); existing `BATCH_SIZE = 256 // WORLD_SIZE` pattern with ResNet50d/336x336 fits without reduction (verified 2026-05-22), but new workloads should budget for 23 GB/GPU
+- **Model sizes**: Current scripts use ResNet50d with 336x336 images; fits on L4
+- **FP8 features**: Lab 4 (Transformer Engine) requires FP8 support; L4 supports FP8 (Ada Lovelace architecture, same family as L40S/H100)
 - **Multi-GPU**: Adjust `WORLD_SIZE` for available GPU count on instance
 - **NCCL Topology**: Notebooks show examples of 8-GPU (single node) and 2x4 GPU (multi-node) ring topologies for educational purposes, even if not executing with that configuration
 

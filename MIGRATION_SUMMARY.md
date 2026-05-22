@@ -4,7 +4,7 @@
 Successfully migrated the Profiling AI Software Bootcamp from Slurm cluster execution to single-node cloud instance execution.
 
 **Branch**: `single-node-migration`
-**Target Hardware**: L40S GPUs (48GB) with FP8 support
+**Target Hardware**: 4× NVIDIA L4 GPUs (23GB each, Ada Lovelace, FP8 supported)
 **Date**: 2026-05-21
 
 ## Commits
@@ -164,8 +164,8 @@ For each updated notebook, verify:
 
 ## Next Steps
 
-1. Test notebooks on actual L40S instance
-2. Adjust batch sizes if memory issues arise (L40S has 48GB vs H100's 80GB)
+1. Test notebooks on actual L4 instance (DONE 2026-05-22 — all 9 code-bearing notebooks pass end-to-end)
+2. Adjust batch sizes if memory issues arise (L4 has 23GB vs H100's 80GB); none needed so far
 3. Add jupyterlab-nvdashboard integration
 4. Add torch_tb_profiler integration
 5. Update any remaining references to node counts in explanatory text
@@ -178,4 +178,4 @@ None identified during migration. All Slurm commands successfully removed or ada
 
 - All `--nnodes=1` flags kept in torchrun commands (harmless redundancy per user preference)
 - Multi-node educational content preserved in multinode.ipynb
-- FP8 Lab 4 content unchanged (requires L40S or H100)
+- FP8 Lab 4 content unchanged (requires Ada Lovelace or newer: L4, L40S, or H100)

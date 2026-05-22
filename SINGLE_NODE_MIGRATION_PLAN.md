@@ -266,25 +266,24 @@ Some notebooks reference scripts in `source_code/` that may have hardcoded multi
 
 ## GPU Count Scaling Strategy
 
-Given migration from H100 (80GB) to L4 (24GB) or L40S (48GB):
+Given migration from H100 (80GB) to L4 (23GB):
 
 ### Memory-Constrained Adjustments
 1. **Batch Sizes**: Current `BATCH_SIZE = 256 // WORLD_SIZE`
-   - May need to reduce to fit L4 memory (24GB)
-   - Test with smaller batches: 128 or 64 total
+   - Verified to fit on L4 (23GB) at WORLD_SIZE=4 with the existing 336x336 ResNet50d setup (2026-05-22)
+   - If new workloads push memory limits, try 128 or 64 total
 
 2. **Image Sizes**: Current uses 336x336 images
    - Consider reducing to 224x224 if memory issues arise
    - Or use smaller model variant
 
 3. **Model**: Currently ResNet50d from timm
-   - This should fit on L4/L40S
+   - Fits on L4
    - Monitor memory usage with nvidia-smi
 
 4. **Number of Processes**:
-   - If using L4: may need to reduce from 4 to 2 processes
-   - L40S: should handle 4 processes
-   - Adjust --nproc-per-node accordingly
+   - 4 processes on L4 verified working
+   - Adjust --nproc-per-node if reducing for memory reasons
 
 ---
 
@@ -338,10 +337,10 @@ Once single-node execution works:
 
 ## Potential Issues
 
-### Issue 1: FP8 Support (RESOLVED - Using L40S)
-- **Decision**: Target L40S GPUs which support FP8 (Ada Lovelace architecture)
-- **Impact**: Lab 4 (Transformer Engine) will work as designed
-- **Note**: If hardware changes to L4 later, will need to adapt Lab 4
+### Issue 1: FP8 Support (RESOLVED - Using L4)
+- **Decision**: Target L4 GPUs which support FP8 (Ada Lovelace architecture, same family as L40S)
+- **Impact**: Lab 4 (Transformer Engine) works as designed — verified end-to-end on 2026-05-22
+- **Note**: FP8 needs Ada Lovelace or newer (L4, L40S, H100)
 
 ### Issue 2: Insufficient GPU Memory
 - **Problem**: Models may not fit with current batch sizes
