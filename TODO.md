@@ -74,7 +74,7 @@
    - Level 3: Nsight Compute - "Kernel-level details (warp stalls, cache)"
 
 ## Notes
-- Target hardware: L40S GPUs (48GB) with FP8 support
+- Target hardware: 4× NVIDIA L4 GPUs (23GB each, Ada Lovelace, FP8 supported)
 - Base image: nvcr.io/nvidia/pytorch:26.02-py3
 - All changes on main branch, pushed to origin
 - torch_tb_profiler already installed for TensorBoard integration
