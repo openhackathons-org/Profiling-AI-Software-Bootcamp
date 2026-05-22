@@ -2,25 +2,41 @@
 
 ## Tomorrow's Priority Tasks
 
-### 1. Add JupyterLab Nsight Extension
+### 1. PyTorch Profiler Integration (shapes downstream notebook work)
+- **Goal**: Introduce PyTorch's native profiling alongside the existing nsys + manual NVTX workflow, so students see the recommended three-level funnel (PyTorch Profiler → Nsight Systems → Nsight Compute) instead of only the middle layer.
+- **Why early**: Decisions made here (which notebook is the entry point, whether `emit_nvtx()` stays, whether manual NVTX ranges get replaced by `--pytorch=autograd-nvtx`) ripple through every later notebook edit.
+
+- **Current state (audited 2026-05-22)**:
+  - Manual `torch.cuda.nvtx.range_push/range_pop` in `source_code/baseline.py`, `ddp_optimize.py`, `fp8/te_transformer_layer_fp8.py`, `fp8/te_unfused_attn_fp8.py`.
+  - One vestigial `torch.autograd.profiler.emit_nvtx()` wrapping the training loop in `baseline.py`; not used elsewhere.
+  - **Zero** uses of `torch.profiler.profile()`, `torch_tb_profiler`, or `nsys profile --pytorch=autograd-nvtx` anywhere — despite `torch_tb_profiler` being pre-installed in the container.
+
+- **Substeps (do in order)**:
+  - **(a) Entry-point notebook**: Pick where students first meet PyTorch Profiler. Candidates: add cells to existing `nsys-introduction.ipynb` (currently markdown-only — good blank canvas) *or* create a new `pytorch-profiler-intro.ipynb` ahead of `nsys-introduction` in the TOC. Decide which before writing any code.
+  - **(b) Instrument `baseline.py` with `torch.profiler`**: Add a `torch.profiler.profile()` context with `tensorboard_trace_handler(logdir='/workspace/logs')`. baseline.py is simplest and already has manual NVTX, so students can compare the two views side-by-side. Add a notebook cell that runs it and points students to TensorBoard at `:8889`.
+  - **(c) Auto-NVTX via nsys on `ddp_optimize.py`**: Remove the manual `nvtx.range_push/pop` lines, profile via `nsys profile --pytorch=autograd-nvtx --trace=cuda,osrt,nvtx …`. Compare timelines with the manual-NVTX version (`ddp-baseline_nvtx.py`) in a notebook cell to show what auto-annotation produces vs hand-curated ranges.
+  - **(d) Combined cell**: In `nsys-application.ipynb` (or a new lab), run a training step under *both* `torch.profiler.profile()` *and* `nsys profile --pytorch=autograd-nvtx` simultaneously. Demonstrates the three-level funnel concretely on one training script.
+  - **(e) Decide fate of `emit_nvtx()`**: With `--pytorch=autograd-nvtx` providing automatic PyTorch-op NVTX from nsys' side, the `emit_nvtx()` context in `baseline.py` is largely redundant. Either remove it and rely on the nsys flag, or keep it as a "here's the in-process equivalent" teaching moment. Pick one and document the reasoning.
+
+- **Components reference**:
+  - `torch_tb_profiler`: pre-installed; TensorBoard already auto-starts in the container on port 8889.
+  - `torch.profiler.profile()` + `tensorboard_trace_handler`: macro-level per-step timing, view in TensorBoard.
+  - `nsys profile --pytorch=autograd-nvtx`: nsys flag that auto-emits NVTX ranges for PyTorch ops; no code changes required.
+  - `torch.autograd.profiler.emit_nvtx()`: in-process equivalent of the above; older API.
+
+- **Workflow**: PyTorch Profiler (which step is slow?) → Nsight Systems (root cause: I/O? sync?) → Nsight Compute (kernel details)
+
+- **Resources**:
+  - [PyTorch Profiler with TensorBoard Tutorial](https://docs.pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html)
+  - [Automatic NVTX annotations with --pytorch flag](https://the-dsvolk.github.io/ai-perf/ai-infra/Tale_of_two_profilers.html)
+  - [Speed Up PyTorch Training with Nsight](https://arikpoz.github.io/posts/2025-05-25-speed-up-pytorch-training-by-3x-with-nvidia-nsight-and-pytorch-2-tricks/)
+
+### 2. Add JupyterLab Nsight Extension
 - **Goal**: Enable in-browser Nsight Systems profiling
 - **Resource**: https://developer.nvidia.com/tools-overview/nsight-jupyterlab
 - **Why**: Students can view profiling results directly in JupyterLab without downloading .nsys-rep files
 - **Implementation**: Add to docker-compose pip install and configure JupyterLab extension
 - **Benefit**: First couple of notebooks can use local Nsight analysis before needing downloads
-
-### 2. PyTorch Profiler Integration
-- **Goal**: Leverage PyTorch's built-in profiling capabilities
-- **Components**:
-  - **torch_tb_profiler**: Already installed for TensorBoard visualization
-  - **torch.profiler**: PyTorch's native profiler for macro-level step timing
-  - **Automatic NVTX**: Use `nsys profile --pytorch=autograd-nvtx` flag for automatic annotations
-  - **Manual NVTX**: `torch.autograd.profiler.emit_nvtx()` context manager for custom markers
-- **Workflow**: PyTorch Profiler (which step is slow?) → Nsight Systems (root cause: I/O? sync?) → Nsight Compute (kernel details)
-- **Resources**:
-  - [PyTorch Profiler with TensorBoard Tutorial](https://docs.pytorch.org/tutorials/intermediate/tensorboard_profiler_tutorial.html)
-  - [Automatic NVTX annotations with --pytorch flag](https://the-dsvolk.github.io/ai-perf/ai-infra/Tale_of_two_profilers.html)
-  - [Speed Up PyTorch Training with Nsight](https://arikpoz.github.io/posts/2025-05-25-speed-up-pytorch-training-by-3x-with-nvidia-nsight-and-pytorch-2-tricks/)
 
 ### 3. Add Nsight Compute Coverage (Future)
 - **Goal**: Cover Nsight Compute for detailed kernel analysis
