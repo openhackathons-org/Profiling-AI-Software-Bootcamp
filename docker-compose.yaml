@@ -10,6 +10,8 @@ services:
         target: /workspace
     environment:
       - NVIDIA_DRIVER_CAPABILITIES=all
+    cap_add:
+      - SYS_ADMIN
     deploy:
       resources:
         reservations:
