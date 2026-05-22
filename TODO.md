@@ -31,14 +31,35 @@
   - [Automatic NVTX annotations with --pytorch flag](https://the-dsvolk.github.io/ai-perf/ai-infra/Tale_of_two_profilers.html)
   - [Speed Up PyTorch Training with Nsight](https://arikpoz.github.io/posts/2025-05-25-speed-up-pytorch-training-by-3x-with-nvidia-nsight-and-pytorch-2-tricks/)
 
-### 2. Add JupyterLab Nsight Extension
+### 2. Nsight Systems Analysis Recipes (multi-report / cross-rank analysis)
+- **Goal**: Introduce the `nsys recipe` system — multi-report statistical analysis that complements opening individual `.nsys-rep` files in the GUI. Cover a built-in recipe, a diagnostic pair, and a custom recipe, all anchored to the existing 4-GPU DDP reports the lab already produces.
+- **Why early**: The recipe system is the natural next step after students have learned to read individual nsys timelines. It also gives concrete numbers (overlap %, idle gaps, per-rank stats) to back up qualitative timeline observations.
+- **Notebook home**: Extend `nsys-application.ipynb` with a new section at the end. Reuses the `baseline_nvtx.nsys-rep` and `firstOptim.nsys-rep` reports the lab already generates, so the before/after pairing lives in one place.
+
+- **Substeps (do in order)**:
+  - **(a) Built-in recipe headline demo — `nccl_gpu_overlap_trace`**: Run the recipe on both `baseline_nvtx.nsys-rep` and `firstOptim.nsys-rep`. Compare the resulting communication-vs-compute overlap percentages per rank. Directly quantifies the DDP optimization the lab teaches qualitatively ("overlap went from X% to Y%"). One CLI invocation per report; the recipe emits CSV + a Jupyter notebook in an `.nsys-analysis` bundle. Decide whether to show the auto-generated notebook inline or pull the CSV into our own cells.
+  - **(b) Diagnostic recipe pair — `gpu_gaps` + `cuda_gpu_kern_pace`**: `gpu_gaps` (default threshold 500ms) flags idle periods — surfaces data-loader stalls and sync waits. `cuda_gpu_kern_pace` shows whether kernel cadence is consistent across all 4 ranks; divergence indicates stragglers. Run both on `firstOptim.nsys-rep` (the more interesting one) feeding all 4 GPU traces together. Demonstrates the multi-report value-add that's hard to see in a single timeline.
+  - **(c) Custom recipe — per-rank time in NVTX ranges**: Write a bespoke recipe that extracts the manual NVTX ranges already in `ddp_optimize.py` (`"Train"`, `"Data loading"`, `"Copy to device"`, `"Forward pass"`, `"Backward pass"`) and produces a per-rank summary (stacked bar or table). Will likely require copying a built-in recipe (e.g., `nccl_sum.py`) as a template since the public docs are light on the user-defined-recipe API. Side benefit: ties student-written NVTX instrumentation from earlier labs into programmatic downstream analysis.
+
+- **Operational notes**:
+  - Reports already exist at `workspace/reports/baseline_nvtx.nsys-rep` and `workspace/reports/firstOptim.nsys-rep` (regenerated whenever the user re-runs `nsys-application.ipynb`).
+  - `nsys recipe` is available in the compose container alongside `nsys` itself (`nvcr.io/nvidia/pytorch:26.02-py3`); no new installs required.
+  - Built-in recipes live at `<nsys-target-dir>/python/packages/nsys-recipe/recipes/` inside the container — locate via `nsys --version` then `find` from `/usr/local/cuda`. Read one before writing (c).
+  - Output `.nsys-analysis` bundles include both raw CSV/Parquet and a generated Jupyter notebook; we can either embed those notebooks or load the CSVs into our own cells.
+
+- **Resources**:
+  - [Nsight Systems Analysis Guide](https://docs.nvidia.com/nsight-systems/AnalysisGuide/index.html)
+  - "Available Advanced Analysis Recipes" section of the above for the recipe catalog
+  - "Tutorial: Create a User-Defined Recipe" section (referenced but light) — fall back to reading built-in recipes as templates
+
+### 3. Add JupyterLab Nsight Extension
 - **Goal**: Enable in-browser Nsight Systems profiling
 - **Resource**: https://developer.nvidia.com/tools-overview/nsight-jupyterlab
 - **Why**: Students can view profiling results directly in JupyterLab without downloading .nsys-rep files
 - **Implementation**: Add to docker-compose pip install and configure JupyterLab extension
 - **Benefit**: First couple of notebooks can use local Nsight analysis before needing downloads
 
-### 3. Add Nsight Compute Coverage (Future)
+### 4. Add Nsight Compute Coverage (Future)
 - **Goal**: Cover Nsight Compute for detailed kernel analysis
 - **Use Case**: Micro-level Python kernel profiling (warp stalls, cache efficiency, occupancy)
 - **Note**: Third level after PyTorch Profiler and Nsight Systems
