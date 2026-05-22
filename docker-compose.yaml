@@ -23,6 +23,10 @@ services:
     shm_size: '2gb'
     ipc: host
     command: >
-      sh -c "pip install -jupyterlab-nvdashboard torch_tb_profiler nvtx &&
+      sh -c "pip install gdown jupyterlab-nvdashboard torch_tb_profiler nvtx &&
+             cd /workspace && python3 ./source_code/download-data.py &&
+             cd /workspace/data && unzip -u data-list.zip &&
+             cd /workspace/source_code && unzip -u saved_models.zip &&
+             cd /workspace &&
              tensorboard --logdir=/workspace/logs --port 8889 &
              exec jupyter-lab --no-browser --allow-root --ip=0.0.0.0 --port=8888 --NotebookApp.token='' --notebook-dir=/workspace/"
