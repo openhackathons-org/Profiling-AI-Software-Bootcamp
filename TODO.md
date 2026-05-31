@@ -1,13 +1,13 @@
 # Workshop TODO List
 
 ## Current Priority: Intro Notebook Polish
-**Branch**: `introductory-notebooks`
+**Branch**: `review-intro-notebooks`
 
 ### 1. New Introductory Notebooks: PyTorch Profiler → Nsight Systems via a Two-Bug Demo
 
-**Status**: Scripts complete and verified. Notebooks written. Remaining: review, images, TOC wiring.
+**Status**: Scripts complete and verified. Notebooks written. TOC wired. Remaining: review, images.
 
-**What's done (2026-05-28):**
+**What's done (2026-05-30):**
 - 7 training scripts in `workspace/source_code/intro/`, all verified on L4 (batch=256):
   - `train_v1.py` — Bug 1 (DataLoader stall), ~260 ms/step
   - `train_v1_profile.py` — Bug 1 + torch.profiler
@@ -19,19 +19,20 @@
 - Bug 2 design: `set_detect_anomaly(True)` left on after debugging a NaN issue.
   Creates per-op D2H syncs in backward — sawtooth GPU timeline. +38% overhead at batch=256.
   Empirical search in `workspace/source_code/intro/v2_bakeoff.py`.
-- 4 intro notebooks written (following nsys-application.ipynb style):
+- 5 intro notebooks written (following nsys-application.ipynb style):
   - `intro-profiling-concepts.ipynb` — profiling loop, tool overview
   - `intro-pytorch-profiler.ipynb` — torch.profiler, Bug 1 discovery + fix
+  - `intro-profiler-exports.ipynb` — batch/headless exports (text tables, Perfetto traces, memory HTML, flame graphs)
   - `intro-amp.ipynb` — AMP intro, profiler hits its limits
   - `intro-nsys.ipynb` — nsys plain → NVTX → auto-NVTX, Bug 2 fix
 - `nsys-intermediate.ipynb` copied from `nsys-introduction.ipynb` (cut point TBD)
 - `--pytorch=autograd-nvtx` flag confirmed in nsys 2026.1.1 on target hardware
+- ✓ TOC wired in `start_here.ipynb` with all 5 intro notebooks
 
 **Remaining substeps:**
 - **(a) Review notebooks in JupyterLab** — check cell output formatting, verify TensorBoard links, confirm nsys commands work end-to-end
 - **(b) Add profiler screenshot images** — run train_v1_profile and train_v1_fixed, capture TensorBoard screenshots; run train_v2_nvtx under nsys, capture the sawtooth timeline. Add to `workspace/jupyter_notebook/images/`.
-- **(c) Wire into TOC** — update `workspace/start_here.ipynb` to place the four intro notebooks ahead of the existing lab sequence
-- **(d) Find nsys-introduction cut point** — review nsys-introduction.ipynb and decide where to split: intro-nsys.ipynb covers the basic concepts; nsys-intermediate.ipynb picks up with multi-GPU / DDP profiling
+- **(c) Find nsys-introduction cut point** — review nsys-introduction.ipynb and decide where to split: intro-nsys.ipynb covers the basic concepts; nsys-intermediate.ipynb picks up with multi-GPU / DDP profiling
 
 **Pedagogical arc:**
 - Bug 1: DataLoader stall. `torch.profiler` step view makes it obvious. Fix: `num_workers`, `pin_memory`.
@@ -81,8 +82,10 @@
 - ✓ Tested nsys profiling — working perfectly
 - ✓ Empirical search for Bug 2 candidate (v2_bakeoff.py) — set_detect_anomaly chosen
 - ✓ 7 intro training scripts written and verified (v1/v1_profile/v1_fixed/v2/v2_profile/v2_nvtx/v2_fixed)
-- ✓ 4 intro notebooks written (profiling-concepts, pytorch-profiler, amp, nsys)
+- ✓ 5 intro notebooks written (profiling-concepts, pytorch-profiler, profiler-exports, amp, nsys)
 - ✓ nsys-intermediate.ipynb created (copy of nsys-introduction, cut point TBD)
+- ✓ TOC wired in start_here.ipynb with intro lab sequence
+- ✓ intro-profiler-exports.ipynb added for batch/Slurm workflows (text, Perfetto, memory HTML, flame graphs)
 
 ---
 

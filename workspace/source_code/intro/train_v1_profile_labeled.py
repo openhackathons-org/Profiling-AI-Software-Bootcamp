@@ -1,18 +1,17 @@
-"""Intro lab v1 (fixed): Bug 1 resolved.
+"""Intro lab v1 (profiled + labeled): train_v1_profile.py with record_function.
 
-Diff vs train_v1_profile_labeled.py:
-    NUM_WORKERS = 0       -> NUM_WORKERS = 4
-    PIN_MEMORY  = False   -> PIN_MEMORY  = True
+Same as train_v1_profile.py, but each section of the training step is wrapped
+in torch.profiler.record_function() so the profiler can categorize time spent
+in DataLoader, Forward, Backward, and Optimizer.
 
-The profiler step view now shows DataLoader no longer dominates — GPU compute
-fills each step instead.  The labeled sections (DataLoader, Forward, Backward,
-Optimizer) let you compare the breakdown before and after the fix.
+Now the TensorBoard Overview shows exactly where time goes — and DataLoader
+dominates at ~90% of each step.
 
-Trace lands in /workspace/logs/train_v1_fixed/.
+Trace lands in /workspace/logs/train_v1_profile_labeled/.
 View with TensorBoard on port 8889.
 
 Usage:
-    python train_v1_fixed.py
+    python train_v1_profile_labeled.py
 """
 
 import time
@@ -31,8 +30,8 @@ WARMUP_ITERS = 5
 DATA_ROOT = "/workspace/data"
 LOG_ROOT = "/workspace/logs"
 
-NUM_WORKERS = 4      # fix: parallel data loading
-PIN_MEMORY = True    # fix: pinned host buffers
+NUM_WORKERS = 0      # Bug 1: single-threaded data loading
+PIN_MEMORY = False   # Bug 1: pageable memory
 
 
 def build_loader():
@@ -73,7 +72,7 @@ def train():
     loss_fn = nn.CrossEntropyLoss()
     model.train()
 
-    logdir = Path(LOG_ROOT) / "train_v1_fixed"
+    logdir = Path(LOG_ROOT) / "train_v1_profile_labeled"
     logdir.mkdir(parents=True, exist_ok=True)
 
     step_times = []

@@ -66,17 +66,28 @@ singularity run --nv -B workspace:/workspace tecont.simg jupyter-lab --no-browse
 
 ## Workshop Labs Overview
 
-1. **Lab 1: System Topology** (`system-topology.ipynb`) - Understanding multi-GPU architecture
-2. **Lab 2: Distributed Training Strategy**
-   - `data-parallelism.ipynb` - DDP training patterns
-   - `model-parallelism.ipynb` - Model sharding approaches
-3. **Lab 3: Performance Overview**
-   - `nsys-introduction.ipynb` - Basic Nsight Systems profiling
-   - `nsight_advanced.ipynb` - Advanced profiling techniques
-   - `multinode.ipynb` - Multi-node profiling (original cluster setup)
-4. **Lab 4: Transformer Engine**
-   - `transEng.ipynb` - FP8 and Transformer Engine overview
-   - `nsys-fp8.ipynb` - FP8 optimization profiling
+**Intro Lab: Introduction to Profiling** (hands-on, two-bug demo)
+1. `intro-profiling-concepts.ipynb` - Profiling loop, tool overview
+2. `intro-pytorch-profiler.ipynb` - PyTorch Profiler, Bug 1 (DataLoader stall) discovery + fix
+3. `intro-profiler-exports.ipynb` - Batch/headless workflow exports (text, Perfetto, memory HTML, flame graphs)
+4. `intro-amp.ipynb` - AMP intro, profiler hits its limits
+5. `intro-nsys.ipynb` - Nsight Systems, Bug 2 (set_detect_anomaly) discovery + fix
+
+**Lab 1: System Topology** (`system-topology.ipynb`) - Understanding multi-GPU architecture
+
+**Lab 2: Distributed Training Strategy**
+- `data-parallelism.ipynb` - DDP training patterns
+- `model-parallelism.ipynb` - Model sharding approaches
+
+**Lab 3: Performance Overview**
+- `nsys-introduction.ipynb` - Basic Nsight Systems profiling
+- `nsys-intermediate.ipynb` - Multi-GPU / DDP profiling
+- `nsight_advanced.ipynb` - Advanced profiling techniques
+- `multinode.ipynb` - Multi-node profiling (educational reference)
+
+**Lab 4: Transformer Engine**
+- `transEng.ipynb` - FP8 and Transformer Engine overview
+- `nsys-fp8.ipynb` - FP8 optimization profiling
 
 Entry point: `workspace/start_here.ipynb`
 
@@ -141,6 +152,16 @@ nvtx.range_push("training_step")
 # ... code ...
 nvtx.range_pop()
 ```
+
+### Notebook Editing Guidelines
+
+**Cell source format**: The nbformat spec requires cell `source` fields to be arrays of strings (one per line with `\n` at the end of each line except the last), not plain strings. When editing notebooks:
+- Use the Read tool to view notebooks before editing
+- Use the Edit tool for surgical changes to existing cell content
+- Avoid using NotebookEdit to create cells with multi-line content (it may produce string sources)
+- After editing, validate with: `python -c "import nbformat; nbformat.validate(nbformat.read('notebook.ipynb', 4))"`
+
+**GitHub rendering**: GitHub's notebook renderer is strict about nbformat compliance. A malformed cell in any notebook can cause rendering failures.
 
 ### Known Issues
 

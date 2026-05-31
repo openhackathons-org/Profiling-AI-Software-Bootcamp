@@ -6,11 +6,20 @@ The Profiling AI Software Bootcamp covers the process and tools for profiling AI
 
 ## Bootcamp Content
 
-This content contains 4 Labs:
-- Lab 1: System Topology
-- Lab 2: Distributed Training Strategy
-- Lab 3: Performance Overview
-- Lab 4: Transformer Engine
+This content contains an introductory hands-on lab followed by 4 advanced labs:
+
+- **Intro Lab: Introduction to Profiling** (5 notebooks)
+  - Profiling Concepts
+  - PyTorch Profiler
+  - Profiler Exports for Batch Workflows
+  - Mixed Precision Training (AMP)
+  - Introduction to Nsight Systems
+- **Lab 1:** System Topology
+- **Lab 2:** Distributed Training Strategy
+- **Lab 3:** Performance Overview
+- **Lab 4:** Transformer Engine
+
+The Intro Lab uses a hands-on, two-bug demo approach: attendees discover and fix real performance issues using PyTorch Profiler and Nsight Systems, learning when each tool is most effective.
 
 
 ## Bootcamp Duration
@@ -20,9 +29,12 @@ The duration of the tutorial is 4 hours 30 minutes.
 
 ## Tools and Frameworks
 
-The tools and frameworks used in this bootcamp are as follows
+The tools and frameworks used in this bootcamp are as follows:
+- [PyTorch](https://pytorch.org/) with [PyTorch Profiler](https://pytorch.org/docs/stable/profiler.html)
 - [NVIDIA® Nsight™ Systems](https://developer.nvidia.com/nsight-systems)
-- [PyTorch](https://pytorch.org/)
+- [TensorBoard](https://www.tensorflow.org/tensorboard) (for PyTorch Profiler visualization)
+- [Perfetto](https://ui.perfetto.dev/) (for viewing exported Chrome traces)
+- NVTX annotations for custom profiling ranges
 
 
 ## Deploying the Bootcamp Material
