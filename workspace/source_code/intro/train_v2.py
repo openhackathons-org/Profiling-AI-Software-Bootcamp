@@ -1,6 +1,6 @@
 """Intro lab v2: CIFAR-10 + ResNet18 with mixed-precision (AMP), single GPU.
 
-Adds torch.cuda.amp (autocast + GradScaler) to the fixed v1 training loop.
+Adds bfloat16 mixed precision (torch.amp.autocast) to the fixed v1 training loop.
 Expected speedup over FP32 (train_v1_fixed.py): ~2×.
 
 Usage:
@@ -61,7 +61,6 @@ def train():
     loader = build_loader()
     model = build_model(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
-    scaler = torch.amp.GradScaler("cuda")
     loss_fn = nn.CrossEntropyLoss()
     model.train()
 
@@ -75,13 +74,12 @@ def train():
         x, y = next(loader_iter)
         x = x.to(device, non_blocking=True)
         y = y.to(device, non_blocking=True)
-        with torch.autocast("cuda", dtype=torch.float16):
+        with torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16):
             logits = model(x)
             loss = loss_fn(logits, y)
         optimizer.zero_grad(set_to_none=True)
-        scaler.scale(loss).backward()
-        scaler.step(optimizer)
-        scaler.update()
+        loss.backward()
+        optimizer.step()
 
         torch.cuda.synchronize()
         step_times.append(time.perf_counter() - t0)

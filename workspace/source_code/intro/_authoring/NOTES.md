@@ -1,5 +1,7 @@
 # Intro-Notebook Scripts: Design Notes
 
+> **2026-05-31 update:** AMP scripts modernized from `torch.autocast("cuda", dtype=torch.float16)` + `torch.amp.GradScaler` to `torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16)` with no scaler.  bf16 has FP32's dynamic range so the scaler is unnecessary, and L4 (Ada Lovelace) supports bf16 natively.  Performance numbers below were measured with the *original* fp16+scaler configuration and have not been re-measured under bf16 — they're directionally correct but the exact ms/step values are likely to shift slightly when re-run.
+
 ## Final script inventory
 
 | File | Task | Bug | Status |
@@ -46,7 +48,10 @@ any of 32×32, 128×128, 224×224 with batch 256.  ResNet18 keeps the GPU busy
 enough that CPU prep fits inside the GPU compute window.
 
 `set_detect_anomaly(True)` was chosen as a replacement after an empirical
-search (`v2_bakeoff.py`).  Key findings:
+search (`v2_bakeoff.py` in this directory).  Note that `v2_bakeoff.py` itself
+still uses the original fp16+scaler configuration — the bf16 modernization
+was applied only to the student-facing `train_v2*.py` scripts.  Key findings
+from the original search:
 
 - Anomaly detection overhead is ~22 ms/step (batch-size independent — it
   scales with backward op count, not data volume).

@@ -4,8 +4,10 @@ Same as train_v1_profile.py, but each section of the training step is wrapped
 in torch.profiler.record_function() so the profiler can categorize time spent
 in DataLoader, Forward, Backward, and Optimizer.
 
-Now the TensorBoard Overview shows exactly where time goes — and DataLoader
-dominates at ~90% of each step.
+Open the resulting trace in TensorBoard and look at the Trace view: zoom
+into a single step and the DataLoader span occupies most of it.  (The
+labels only show up in the Trace view; the Overview and Operator panes
+group by built-in categories and aten operators, not user annotations.)
 
 Trace lands in /workspace/logs/train_v1_profile_labeled/.
 View with TensorBoard on port 8889.

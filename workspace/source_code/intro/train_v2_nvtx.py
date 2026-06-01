@@ -70,7 +70,6 @@ def train():
     loader = build_loader()
     model = build_model(device)
     optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9)
-    scaler = torch.amp.GradScaler("cuda")
     loss_fn = nn.CrossEntropyLoss()
     model.train()
 
@@ -93,19 +92,18 @@ def train():
         nvtx.range_pop()
 
         nvtx.range_push("forward")
-        with torch.autocast("cuda", dtype=torch.float16):
+        with torch.amp.autocast(device_type="cuda", dtype=torch.bfloat16):
             logits = model(x)
             loss = loss_fn(logits, y)
         nvtx.range_pop()
 
         nvtx.range_push("backward")
         optimizer.zero_grad(set_to_none=True)
-        scaler.scale(loss).backward()
+        loss.backward()
         nvtx.range_pop()
 
         nvtx.range_push("optimizer")
-        scaler.step(optimizer)
-        scaler.update()
+        optimizer.step()
         nvtx.range_pop()
 
         nvtx.range_pop()  # step
