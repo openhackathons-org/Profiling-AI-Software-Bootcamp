@@ -31,4 +31,4 @@ services:
              cd /workspace/source_code && unzip -u saved_models.zip &&
              cd /workspace &&
              tensorboard --logdir=/workspace/logs --port 8889 &
-             exec jupyter-lab --no-browser --allow-root --ip=0.0.0.0 --port=8888 --NotebookApp.token='' --notebook-dir=/workspace/"
+             exec jupyter-lab --no-browser --allow-root --ip=0.0.0.0 --port=8888 --NotebookApp.token='' --notebook-dir=."
